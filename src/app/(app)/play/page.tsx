@@ -276,6 +276,136 @@ function getCoachTip(cls: MoveClass, bestSan: string, playedSan: string): string
   return base;
 }
 
+// ─── Intent Analysis ──────────────────────────────────────────────────────────
+
+function generateIntent(
+  san: string,
+  piece: string,
+  captured: string | undefined,
+  isCheck: boolean,
+  isCastle: boolean,
+  isDev: boolean,
+  phase: string,
+  to: string,
+): string {
+  const pn: Record<string, string> = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "king" };
+  if (isCastle) return "You castled to move the king to safety behind the pawn shield and connect your rooks — both goals in a single move.";
+  if (isCheck) return `You played ${san} to give check, forcing your opponent to react to your threat rather than advancing their own plan — a tempo gained.`;
+  if (captured) return `You captured on ${to}, prioritizing the material gain. Whether the exchange is favorable depends on the resulting position.`;
+  if (isDev && phase === "opening") return `You developed your ${pn[piece] ?? "piece"} to ${to}, following the core opening principle of getting pieces off the back rank and into active play.`;
+  if (piece === "p") {
+    const centerFiles = ["d", "e"];
+    if (centerFiles.includes(to[0])) return `You advanced your ${to[0]}-pawn to ${to}, staking a claim in the center — the most valuable real estate on the board.`;
+    return `You pushed your ${to[0]}-pawn to ${to}, looking to gain space, open a file, or restrict your opponent's pieces.`;
+  }
+  if (piece === "r") return `You activated your rook to ${to}, placing it on what you judged to be the most useful file or rank.`;
+  if (piece === "q") return `You moved your queen to ${to}, bringing it into a more active position to create threats or coordinate with your other pieces.`;
+  if (piece === "n") return `You moved your knight to ${to}, looking to improve its influence — knights need at least 3-4 moves to reach their ideal squares.`;
+  if (piece === "b") return `You repositioned your bishop to ${to}, likely seeking a better diagonal or changing the structure of the position.`;
+  return `You moved your ${pn[piece] ?? "piece"} to ${to}, looking to improve its activity and coordination with the rest of your army.`;
+}
+
+// ─── Deep Why ─────────────────────────────────────────────────────────────────
+
+function generateDeepWhy(
+  cls: MoveClass,
+  san: string,
+  bestSan: string,
+  phase: string,
+  piece: string,
+  captured: string | undefined,
+  isCheck: boolean,
+  isCastle: boolean,
+  evalDrop: number,
+): string {
+  if (isCastle && (cls === "great" || cls === "good" || cls === "brilliant")) {
+    return "Castling accomplishes three things at once: king safety, rook activation, and central control. Failing to castle in the opening is one of the most common causes of middlegame disasters at every level.";
+  }
+  if (isCheck && (cls === "great" || cls === "brilliant")) {
+    return `${san} forces a response — your opponent must deal with the check before doing anything else. This is a tempo: you get a free move's worth of progress. Checks that also develop or improve a piece are especially powerful.`;
+  }
+  if (captured && (cls === "great" || cls === "good" || cls === "brilliant")) {
+    return `Material is the most concrete advantage in chess — it converts directly to endgame wins. This capture is sound: the piece is genuinely won, and your position remains active afterward.`;
+  }
+  if (cls === "brilliant") {
+    return `${san} is a deep move that changes the nature of the position — likely involving a counter-intuitive sacrifice, a long-range maneuver, or a move that simultaneously addresses multiple threats. This is the kind of move that wins games.`;
+  }
+  if (cls === "great") {
+    if (phase === "opening") return `${san} is the engine's top choice here. In the opening, every strong move either develops a piece, contests the center, or prepares castling. This move does exactly what the position demands.`;
+    if (phase === "endgame") return `In endgames, precision is everything — one inaccurate move can throw away a won position. ${san} keeps the technique on track, converting the advantage correctly.`;
+    return `${san} is the strongest continuation: it improves piece activity, maintains pressure, and gives your opponent the fewest good responses. This is what 'good chess' looks like in practice.`;
+  }
+  if (cls === "good") {
+    return `${san} is solid — it doesn't create weaknesses or allow immediate tactics, which is the minimum standard for every move. ${bestSan !== san ? `${bestSan} was marginally better, but the difference is subtle.` : "You matched the engine's recommendation."}`;
+  }
+  if (cls === "interesting") {
+    return `${san} sacrifices a small objective edge for practical complications. Against a human opponent, forcing complex positions often yields better results than passive 'best' moves — this is a legitimate practical weapon.`;
+  }
+  if (cls === "inaccuracy") {
+    return `${san} is playable but misses a subtlety — ${bestSan} was more accurate because it better addresses what the position needs right now. The gap is small but these accumulate over a game.`;
+  }
+  if (cls === "mistake") {
+    return `${san} significantly worsens your position — it either misses a threat, creates a weakness, or allows a tactic that tips the balance. ${bestSan} was the move that kept the position under control. The difference: ~${Math.round(evalDrop)} centipawns of evaluation.`;
+  }
+  if (cls === "blunder") {
+    return `${san} is a game-altering error — it either hangs material, allows a forcing sequence, or creates a fatal weakness. Before every move, the habit of checking: "What can my opponent do after this?" catches almost all blunders. ${bestSan} was the correct move.`;
+  }
+  return `${san} maintains the position. Keep looking for ways to make your pieces more active and your opponent's pieces less so.`;
+}
+
+// ─── Master Game References ───────────────────────────────────────────────────
+
+interface MasterRef {
+  player: string;
+  opponent: string;
+  year: number;
+  event: string;
+  insight: string;
+}
+
+function findMasterReference(
+  cls: MoveClass,
+  phase: string,
+  piece: string,
+  isCapture: boolean,
+  isCastle: boolean,
+  isCheck: boolean,
+): MasterRef | null {
+  if (cls === "brilliant" || (cls === "great" && isCheck)) {
+    return { player: "Mikhail Tal", opponent: "Vasily Smyslov", year: 1959, event: "Candidates Tournament",
+      insight: "Tal won this candidates with moves that defied evaluation — sacrificing material for activity and chaos. He said: 'There are two types of sacrifices: correct ones, and mine.' The lesson: attacking moves force your opponent to solve problems they haven't prepared for." };
+  }
+  if (isCastle) {
+    return { player: "Wilhelm Steinitz", opponent: "Johannes Zukertort", year: 1886, event: "World Championship",
+      insight: "Steinitz, the first World Champion, formalized king safety as a strategic principle — not just a tactic. He wrote: 'The king is a fighting piece — but only after the endgame begins. In the middlegame, get it to safety first.'" };
+  }
+  if (phase === "opening" && (cls === "great" || cls === "good")) {
+    return { player: "José Raúl Capablanca", opponent: "Frank Marshall", year: 1918, event: "New York",
+      insight: "Capablanca's reply to the Marshall Attack became the gold standard of opening preparation. His approach: understand the principles behind the moves, not just the moves themselves. 'In order to improve your game, you must study the endgame before everything else.'" };
+  }
+  if (piece === "n" && (cls === "great" || cls === "good")) {
+    return { player: "Tigran Petrosian", opponent: "Boris Spassky", year: 1966, event: "World Championship",
+      insight: "Petrosian built his career on knight outposts — squares where a knight couldn't be driven away by pawns. He said: 'A knight firmly placed in the heart of the enemy position is worth a rook.' Active knights are the hallmark of positional mastery." };
+  }
+  if (cls === "blunder") {
+    return { player: "Bobby Fischer", opponent: "Boris Spassky", year: 1972, event: "World Championship, Game 1",
+      insight: "Even Fischer — perhaps the greatest chess player who ever lived — blundered a bishop endgame he should have drawn. He later said it was the most embarrassing game of his career. The lesson: no position is so simple that you can stop calculating." };
+  }
+  if (phase === "endgame") {
+    return { player: "José Raúl Capablanca", opponent: "Emanuel Lasker", year: 1921, event: "World Championship",
+      insight: "Capablanca's endgame play was so precise that Lasker — one of history's greatest players — said he couldn't find a single inaccuracy. Capa's principle: 'Simplify into a won endgame rather than play for a flashy combination.'" };
+  }
+  if (cls === "mistake" || cls === "inaccuracy") {
+    return { player: "Magnus Carlsen", opponent: "Vishy Anand", year: 2013, event: "World Championship",
+      insight: "Carlsen won by making fewer mistakes than anyone in chess history — not by finding more brilliant moves. He said: 'I prefer positions where I am not worse.' Error elimination at 1200-1800 ELO is more valuable than finding brilliant moves." };
+  }
+  if (isCapture && cls === "interesting") {
+    return { player: "Garry Kasparov", opponent: "Anatoly Karpov", year: 1985, event: "World Championship",
+      insight: "Kasparov's style was to create imbalances — trading material for activity, structure for initiative. He said: 'Chess is not about material, it is about activity.' Some exchanges that look equal are actually investments in dynamic compensation." };
+  }
+  return null;
+}
+
 function detectOpponentThreats(chess: Chess): string | null {
   if (chess.isCheck()) {
     return "You are in check! You must deal with this immediately.";
@@ -402,6 +532,9 @@ export default function PlayPage() {
   const [lastBestSan, setLastBestSan] = useState<string | null>(null);
   const [lastPlayerSan, setLastPlayerSan] = useState<string | null>(null);
   const [topCandidates, setTopCandidates] = useState<CandidateMove[]>([]);
+  const [intentAnalysis, setIntentAnalysis] = useState<string | null>(null);
+  const [deepWhy, setDeepWhy] = useState<string | null>(null);
+  const [masterRef, setMasterRef] = useState<MasterRef | null>(null);
   const [moveCount, setMoveCount] = useState(0);
   const [showCoach, setShowCoach] = useState(() => {
     if (typeof window !== "undefined") {
@@ -646,6 +779,18 @@ export default function PlayPage() {
         const tip = getCoachTip(cls, bestBefore.san, result.san);
         const threats = detectOpponentThreats(chess);
 
+        const isCastle = result.flags.includes("k") || result.flags.includes("q");
+        const isCheck = result.san.includes("+") || result.san.includes("#");
+        const isWhiteBack = ["a1","b1","c1","d1","e1","f1","g1","h1"];
+        const isBlackBack = ["a8","b8","c8","d8","e8","f8","g8","h8"];
+        const isDev = (result.piece === "n" || result.piece === "b") &&
+          (result.color === "w" ? isWhiteBack.includes(result.from) : isBlackBack.includes(result.from));
+        const currentPhase = chess.history().length <= 20 ? "opening" : chess.history().length <= 60 ? "middlegame" : "endgame";
+
+        const intent = generateIntent(result.san, result.piece, result.captured, isCheck, isCastle, isDev, currentPhase, result.to);
+        const why = generateDeepWhy(cls, result.san, bestBefore.san, currentPhase, result.piece, result.captured, isCheck, isCastle, rawCpLoss);
+        const ref = findMasterReference(cls, currentPhase, result.piece, !!result.captured, isCastle, isCheck);
+
         setLiveEval(evalAfterHeuristic);
         setMoveClass(cls);
         setLastBestSan(bestBefore.san);
@@ -653,6 +798,9 @@ export default function PlayPage() {
         setTopCandidates(candidates);
         setCoachTip(tip);
         setThreatMsg(threats);
+        setIntentAnalysis(intent);
+        setDeepWhy(why);
+        setMasterRef(ref);
         setEvalHistory((prev) => [...prev, evalAfterHeuristic]);
         setMoveCount((c) => c + 1);
 
@@ -1010,6 +1158,9 @@ export default function PlayPage() {
               userColor={userColor}
               botThinking={botThinking}
               gameOver={gameOverRef.current}
+              intentAnalysis={intentAnalysis}
+              deepWhy={deepWhy}
+              masterRef={masterRef}
             />
           )}
 
@@ -1267,6 +1418,7 @@ function EvalSparkline({ evals }: { evals: number[] }) {
 function LiveCoachPanel({
   moveClass, coachTip, threatMsg, lastBestSan, lastPlayerSan,
   topCandidates, liveEval, evalHistory, userColor, botThinking, gameOver,
+  intentAnalysis, deepWhy, masterRef,
 }: {
   moveClass: MoveClass | null;
   coachTip: string | null;
@@ -1279,14 +1431,19 @@ function LiveCoachPanel({
   userColor: "white" | "black";
   botThinking: boolean;
   gameOver: boolean;
+  intentAnalysis: string | null;
+  deepWhy: string | null;
+  masterRef: MasterRef | null;
 }) {
   const style = moveClass ? MOVE_CLASS_STYLES[moveClass] : null;
   const hasContent = moveClass || coachTip || threatMsg;
+  const isBad = moveClass === "blunder" || moveClass === "mistake" || moveClass === "inaccuracy";
+  const isGood = moveClass === "brilliant" || moveClass === "great" || moveClass === "good";
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
           <Brain className="w-3.5 h-3.5 text-accent-gold" />
           Live Coach
@@ -1297,27 +1454,23 @@ function LiveCoachPanel({
             Analyzing...
           </span>
         )}
-        {gameOver && (
-          <span className="text-xs text-text-muted">Game over</span>
-        )}
+        {gameOver && <span className="text-xs text-text-muted">Game over</span>}
       </div>
 
-      {/* Horizontal eval bar */}
-      <div className="mb-3">
-        <HorizontalEvalBar evalCp={liveEval} />
-      </div>
+      {/* Eval bar */}
+      <HorizontalEvalBar evalCp={liveEval} />
 
-      {/* Threat warning — always shown prominently if present */}
+      {/* Threat warning */}
       {threatMsg && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg mb-3 bg-rose-500/10 border border-rose-500/20">
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20">
           <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
           <span className="text-xs text-rose-300 font-medium leading-relaxed">{threatMsg}</span>
         </div>
       )}
 
-      {/* Move quality badge */}
+      {/* ── LAYER 1: Move verdict ── */}
       {style && moveClass && (
-        <div className={`flex items-center justify-between p-2.5 rounded-lg mb-2.5 border ${style.bg} ${style.border}`}>
+        <div className={`flex items-center justify-between p-2.5 rounded-lg border ${style.bg} ${style.border}`}>
           <div className="flex items-center gap-2">
             {moveClass === "brilliant" && <Sparkles className={`w-4 h-4 ${style.color}`} />}
             {(moveClass === "great" || moveClass === "good") && <CheckCircle2 className={`w-4 h-4 ${style.color}`} />}
@@ -1334,58 +1487,70 @@ function LiveCoachPanel({
         </div>
       )}
 
-      {/* Coach tip */}
-      {coachTip && (
-        <p className="text-xs text-text-secondary leading-relaxed mb-2.5">{coachTip}</p>
+      {/* ── LAYER 2: Your intent ── */}
+      {intentAnalysis && moveClass && (
+        <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
+          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Target className="w-3 h-3" /> Your Intent
+          </p>
+          <p className="text-xs text-text-secondary leading-relaxed">{intentAnalysis}</p>
+        </div>
       )}
 
-      {/* Best move hint (shown for inaccuracies and above) */}
-      {lastBestSan && moveClass && !["brilliant", "great", "good"].includes(moveClass) && (
-        <div className="flex items-center gap-2 text-xs bg-bg-tertiary rounded-lg px-2.5 py-2 mb-2.5 font-mono border border-border-subtle">
+      {/* ── LAYER 3: Why it's good or bad ── */}
+      {deepWhy && moveClass && (
+        <div className={`rounded-lg border p-3 ${isBad ? "bg-rose-500/5 border-rose-500/20" : isGood ? "bg-emerald-500/5 border-emerald-500/20" : "bg-bg-secondary border-border-subtle"}`}>
+          <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1 ${isBad ? "text-rose-400" : isGood ? "text-emerald-400" : "text-text-muted"}`}>
+            <Brain className="w-3 h-3" /> Why {isBad ? "this hurts" : "this works"}
+          </p>
+          <p className="text-xs text-text-secondary leading-relaxed">{deepWhy}</p>
+        </div>
+      )}
+
+      {/* Best move hint */}
+      {lastBestSan && moveClass && isBad && (
+        <div className="flex items-center gap-2 text-xs bg-bg-tertiary rounded-lg px-2.5 py-2 font-mono border border-border-subtle">
           <Zap className="w-3.5 h-3.5 text-accent-gold shrink-0" />
           <span className="text-text-muted">Best was</span>
           <span className="font-semibold text-accent-emerald">{lastBestSan}</span>
         </div>
       )}
 
-      {/* Top 3 candidate moves */}
+      {/* Top candidates */}
       {topCandidates.length > 1 && moveClass && (
-        <div className="mb-2.5">
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">
-            Top Candidates
-          </p>
+        <div>
+          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Top Candidates</p>
           <div className="space-y-1">
             {topCandidates.map((c) => (
               <div
                 key={c.san}
                 className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded border ${
-                  c.rank === 1
-                    ? "bg-accent-emerald/5 border-accent-emerald/20"
-                    : "bg-bg-tertiary border-border-subtle"
+                  c.rank === 1 ? "bg-accent-emerald/5 border-accent-emerald/20" : "bg-bg-tertiary border-border-subtle"
                 }`}
               >
-                <span
-                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    c.rank === 1
-                      ? "bg-accent-emerald/20 text-accent-emerald"
-                      : c.rank === 2
-                        ? "bg-accent-gold/20 text-accent-gold"
-                        : "bg-bg-tertiary text-text-muted"
-                  }`}
-                >
-                  {c.rank}
-                </span>
-                <span className="font-mono font-semibold text-text-primary">
-                  {c.san}
-                </span>
-                {c.reason && (
-                  <span className="text-text-muted truncate flex-1">
-                    {c.reason}
-                  </span>
-                )}
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  c.rank === 1 ? "bg-accent-emerald/20 text-accent-emerald"
+                  : c.rank === 2 ? "bg-accent-gold/20 text-accent-gold"
+                  : "bg-bg-tertiary text-text-muted"
+                }`}>{c.rank}</span>
+                <span className="font-mono font-semibold text-text-primary">{c.san}</span>
+                {c.reason && <span className="text-text-muted truncate flex-1">{c.reason}</span>}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── LAYER 4: Master game reference ── */}
+      {masterRef && moveClass && (
+        <div className="rounded-lg border border-accent-gold/20 bg-accent-gold/5 p-3">
+          <p className="text-[10px] font-semibold text-accent-gold uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <BookOpen className="w-3 h-3" /> Similar to Masters
+          </p>
+          <p className="text-xs font-semibold text-text-primary mb-0.5">
+            {masterRef.player} vs {masterRef.opponent} · {masterRef.event} {masterRef.year}
+          </p>
+          <p className="text-xs text-text-secondary leading-relaxed">{masterRef.insight}</p>
         </div>
       )}
 
@@ -1398,14 +1563,12 @@ function LiveCoachPanel({
 
       {/* Eval sparkline */}
       {evalHistory.length > 3 && (
-        <div className="mt-3 pt-3 border-t border-border-subtle">
+        <div className="pt-3 border-t border-border-subtle">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] text-text-muted uppercase tracking-wider flex items-center gap-1">
               <BarChart2 className="w-3 h-3" /> Eval History
             </span>
-            <span className="text-[10px] text-text-muted font-mono">
-              {evalHistory.length - 1} moves
-            </span>
+            <span className="text-[10px] text-text-muted font-mono">{evalHistory.length - 1} moves</span>
           </div>
           <EvalSparkline evals={evalHistory} />
           <div className="flex justify-between mt-1">
