@@ -232,21 +232,22 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 h-screen bg-bg-secondary
+        className={`fixed left-0 top-0 h-screen bg-bg-secondary/85 backdrop-blur-xl
           flex flex-col transition-all duration-300 z-40
           ${collapsed ? "w-16" : "w-[220px]"}`}
-        style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderRight: "1px solid rgba(255,255,255,0.08)", boxShadow: "18px 0 60px rgba(0,0,0,0.22)" }}
       >
         {/* Logo */}
-        <div className="px-5 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="px-4 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-accent-gold rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 bg-gradient-to-br from-accent-gold to-accent-gold-dim rounded-md flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent-gold/10">
               <KingIcon className="w-5 h-5 text-bg-primary" />
             </div>
             {!collapsed && (
-              <h1 className="font-display text-lg font-bold text-text-primary leading-tight tracking-tight">
-                GM Path
-              </h1>
+              <div>
+                <h1 className="text-base font-bold text-text-primary leading-tight">GM Path</h1>
+                <p className="text-[10px] font-medium uppercase text-text-muted">Training OS</p>
+              </div>
             )}
           </Link>
         </div>
@@ -288,8 +289,8 @@ export function Sidebar() {
                               href={item.href}
                               className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150
                                 ${isActive
-                                  ? "text-accent-gold"
-                                  : "text-text-secondary hover:text-text-primary hover:bg-white/[0.04]"
+                                  ? "text-accent-gold bg-accent-gold/[0.08]"
+                                  : "text-text-secondary hover:text-text-primary hover:bg-white/[0.05]"
                                 }
                                 ${collapsed ? "justify-center" : ""}`}
                               title={collapsed ? item.label : undefined}
@@ -347,7 +348,7 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom: Glossary + Logout + Collapse */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="bg-bg-primary/25" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <button
             onClick={() => setShowGlossary(true)}
             className={`w-full flex items-center gap-3 px-5 py-3 text-text-muted hover:text-text-primary

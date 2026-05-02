@@ -7,8 +7,12 @@
 @layer base {
   body {
     @apply bg-bg-primary text-text-primary font-sans antialiased;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     line-height: 1.6;
+    background:
+      radial-gradient(circle at top left, rgba(240, 180, 41, 0.08), transparent 26rem),
+      radial-gradient(circle at 85% 12%, rgba(56, 189, 248, 0.08), transparent 22rem),
+      linear-gradient(180deg, #0b0d12 0%, #0f1117 42%, #11141d 100%);
   }
 
   ::-webkit-scrollbar {
@@ -27,24 +31,26 @@
 
 @layer components {
   .card {
-    @apply bg-bg-card p-5 transition-all duration-200;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.06);
+    @apply bg-bg-card/80 p-5 transition-all duration-200;
+    border-radius: 8px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
   }
   .card-hover {
     @apply card cursor-pointer;
   }
   .card-hover:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    border-color: rgba(240,180,41,0.15);
-    transform: translateY(-1px);
+    box-shadow: 0 22px 70px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
+    border-color: rgba(240,180,41,0.24);
+    transform: translateY(-2px);
   }
 
   .btn-primary {
-    @apply bg-accent-gold text-bg-primary font-semibold px-6 py-2.5 rounded-lg
+    @apply bg-accent-gold text-bg-primary font-semibold px-6 py-2.5 rounded-md
            transition-all duration-150
            focus:outline-none focus:ring-2 focus:ring-accent-gold/50;
+    box-shadow: 0 10px 28px rgba(240,180,41,0.18);
   }
   .btn-primary:hover {
     @apply bg-accent-gold-light;
@@ -52,7 +58,7 @@
   }
 
   .btn-secondary {
-    @apply bg-bg-tertiary text-text-primary font-medium px-6 py-2.5 rounded-lg
+    @apply bg-bg-tertiary text-text-primary font-medium px-6 py-2.5 rounded-md
            transition-all duration-150
            focus:outline-none focus:ring-2 focus:ring-accent-gold/50;
     border: 1px solid rgba(255,255,255,0.06);
@@ -63,7 +69,7 @@
   }
 
   .btn-ghost {
-    @apply text-text-secondary font-medium px-4 py-2 rounded-lg
+    @apply text-text-secondary font-medium px-4 py-2 rounded-md
            transition-all duration-150;
   }
   .btn-ghost:hover {
@@ -73,7 +79,7 @@
   }
 
   .input-field {
-    @apply w-full bg-bg-tertiary rounded-lg px-4 py-2.5
+    @apply w-full bg-bg-tertiary rounded-md px-4 py-2.5
            text-text-primary placeholder-text-muted
            focus:outline-none focus:ring-1 focus:ring-accent-gold/30
            transition-all duration-200;
@@ -92,7 +98,7 @@
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium;
   }
   .badge-gold {
     @apply badge bg-accent-gold/10 text-accent-gold;
@@ -117,7 +123,7 @@
   }
 
   .btn-danger {
-    @apply bg-accent-rose/10 text-accent-rose font-semibold px-6 py-2.5 rounded-lg
+    @apply bg-accent-rose/10 text-accent-rose font-semibold px-6 py-2.5 rounded-md
            hover:bg-accent-rose/20 transition-all duration-150
            focus:outline-none focus:ring-2 focus:ring-accent-rose/50;
     border: 1px solid rgba(239,68,68,0.2);
@@ -125,7 +131,7 @@
 
   /* Segmented control — consistent across all pages */
   .segmented-control {
-    @apply inline-flex rounded-lg p-1;
+    @apply inline-flex rounded-md p-1;
     background: rgba(255,255,255,0.04);
   }
   .segmented-control button {
@@ -140,7 +146,7 @@
 
   /* Pill buttons — for filter chips */
   .pill-button {
-    @apply px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 text-text-secondary;
+    @apply px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 text-text-secondary;
     background: rgba(255,255,255,0.04);
   }
   .pill-button:hover {
@@ -153,7 +159,7 @@
 
   /* Pill toggle group — for time range selectors */
   .pill-toggle {
-    @apply inline-flex rounded-lg p-0.5 gap-0.5;
+    @apply inline-flex rounded-md p-0.5 gap-0.5;
     background: rgba(255,255,255,0.04);
   }
   .pill-toggle button {
@@ -168,7 +174,7 @@
 
   /* Chessboard styling */
   .cg-wrap {
-    @apply rounded-lg overflow-hidden;
+    @apply rounded-md overflow-hidden;
   }
 }
 

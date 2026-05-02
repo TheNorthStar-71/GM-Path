@@ -6,8 +6,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-bg-primary">
       <Sidebar />
-      <main className="ml-[220px] min-h-screen">
-        <div className="max-w-7xl mx-auto px-8 py-10">{children}</div>
+      <main className="min-h-screen pl-[220px]">
+        <div className="mx-auto w-full px-6 py-7 lg:px-8 lg:py-8">{children}</div>
       </main>
     </div>
   );

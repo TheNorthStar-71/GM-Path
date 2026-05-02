@@ -17,6 +17,13 @@ import {
   AlertTriangle,
   Zap,
   BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Dumbbell,
+  Gauge,
+  LineChart,
+  PlayCircle,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ── Flame SVG (replaces emoji) ───────────────────────── */
@@ -278,28 +285,31 @@ export default function DashboardPage() {
   const dateStr = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12 animate-fade-in">
+    <div className="mx-auto max-w-[1440px] animate-fade-in pb-12">
+      <div className="mb-7 flex flex-col gap-4 border-b border-white/[0.07] pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-accent-gold">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {dateStr}
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
+            {greeting}, {userName}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-text-secondary">{streakMsg}</p>
+        </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          HERO: Greeting
-         ═══════════════════════════════════════════════════════════ */}
-      <div className="pt-1 space-y-1">
-        <h1 className="font-display text-3xl md:text-4xl font-semibold text-text-primary tracking-tight">
-          {greeting}, <span className="text-accent-gold">{userName}</span>
-        </h1>
-        <p className="text-text-secondary text-sm">
-          {dateStr} &mdash; {streakMsg}
-        </p>
+        <div className="grid grid-cols-3 gap-2 sm:min-w-[420px]">
+          <HeaderMetric label="Streak" value={String(streak)} icon={<FlameIcon className="h-4 w-4 text-orange-400 animate-flame-pulse" />} />
+          <HeaderMetric label="Puzzle" value={String(rating)} icon={<Gauge className="h-4 w-4 text-accent-gold" />} />
+          <HeaderMetric label="Due" value={String(dueReviews)} icon={<Clock className="h-4 w-4 text-accent-teal" />} />
+        </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          WELCOME STATE
-         ═══════════════════════════════════════════════════════════ */}
       {!welcomeDismissed && streak === 0 && puzzlesToday === 0 && (
-        <div className="p-5 rounded-xl" style={{ border: "1px solid rgba(240,180,41,0.3)" }}>
+        <div className="mb-6 rounded-md border border-accent-gold/30 bg-accent-gold/[0.05] p-4">
           <p className="text-sm text-text-secondary leading-relaxed">
             Welcome to GM Path. The best place to start is your Daily Recommended Training
-            below — it is automatically calibrated to your current level.
+            below. It is automatically calibrated to your current level.
           </p>
           <button onClick={() => setWelcomeDismissed(true)} className="text-xs text-text-muted mt-3 hover:text-text-secondary transition-colors">
             Dismiss
@@ -307,313 +317,264 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════
-          STAT STRIP — single row with vertical dividers
-         ═══════════════════════════════════════════════════════════ */}
-      <div className="card flex items-stretch divide-x divide-white/[0.06] !p-0 overflow-hidden">
-        <StatStripItem
-          href="/progress"
-          icon={<FlameIcon className="w-5 h-5 text-orange-400 animate-flame-pulse" />}
-          value={String(streak)}
-          label="Training Streak"
-          sub="consecutive days of practice"
-          subColor="text-accent-emerald"
-        />
-        <StatStripItem
-          href="/tactics"
-          icon={<TrophyIcon className="w-5 h-5 text-accent-gold" />}
-          value={String(rating)}
-          label="Puzzle Strength"
-          sub="your current tactical level"
-          subColor="text-accent-teal"
-        />
-        <StatStripItem
-          href="/progress"
-          icon={<TrendingUp className="w-5 h-5 text-accent-emerald" />}
-          value={`+${puzzlesToday}`}
-          label="Completed Today"
-          sub="puzzles solved this session"
-          subColor="text-accent-emerald"
-        />
-        <StatStripItem
-          href="/tactics"
-          icon={<Clock className="w-5 h-5 text-accent-teal" />}
-          value={String(dueReviews)}
-          label="Opening Reviews"
-          sub="lines ready to be tested"
-          subColor={dueReviews > 0 ? "text-accent-gold" : "text-accent-emerald"}
-        />
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════
-          DAILY CHALLENGE CARD
-         ═══════════════════════════════════════════════════════════ */}
-      <div className="relative card !p-0 overflow-hidden" style={{ borderLeft: "4px solid #F0B429" }}>
-        <div className="absolute inset-0 bg-gradient-to-br from-accent-gold/[0.04] to-transparent pointer-events-none" />
-
-        <div className="relative z-10 p-6 md:p-8 space-y-4">
-          <p className="text-[10px] font-semibold text-accent-gold uppercase tracking-[0.18em]">
-            Today&apos;s Recommended Training
-          </p>
-
-          <h2 className="font-display text-xl md:text-2xl font-semibold text-text-primary leading-snug italic">
-            &ldquo;{heroMessage}&rdquo;
-          </h2>
-          <p className="text-xs text-text-muted mt-2">
-            Recommended because this is your weakest area. Consistent work here will improve your overall game faster than anything else.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] text-text-secondary">
-              <Target className="w-3.5 h-3.5 text-accent-gold" />
-              {focusArea}
-              {topWeakness && <span className="text-text-muted">(weakest)</span>}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] text-text-secondary">
-              Medium
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] text-text-secondary">
-              <Clock className="w-3.5 h-3.5" />
-              ~{totalMinutes > 0 ? totalMinutes : 20} min
-            </span>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.8fr)]">
+        <section className="card relative overflow-hidden !p-0">
+          <div className="absolute inset-y-0 right-0 hidden w-1/2 opacity-20 md:block">
+            <div className="grid h-full grid-cols-8 grid-rows-8">
+              {Array.from({ length: 64 }).map((_, i) => (
+                <span key={i} className={(Math.floor(i / 8) + i) % 2 === 0 ? "bg-white/[0.045]" : "bg-transparent"} />
+              ))}
+            </div>
           </div>
+          <div className="relative grid gap-7 p-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:p-8">
+            <div>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <Badge icon={<Target className="h-3.5 w-3.5" />}>{focusArea}</Badge>
+                <Badge icon={<Clock className="h-3.5 w-3.5" />}>~{totalMinutes > 0 ? totalMinutes : 20} min</Badge>
+                <Badge icon={<ShieldCheck className="h-3.5 w-3.5" />}>{topWeakness ? "Weakness-based" : "Adaptive"}</Badge>
+              </div>
+              <p className="text-xs font-semibold uppercase text-accent-gold">Daily focus</p>
+              <h2 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight text-text-primary md:text-5xl">
+                {heroMessage}
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-text-secondary">
+                Your next block prioritizes the skill with the biggest rating upside, then feeds it into review and progress tracking.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href={focusLink} className="btn-primary inline-flex items-center gap-2 text-sm">
+                  <PlayCircle className="h-4 w-4" />
+                  Start Focus Block
+                </Link>
+                <Link href="/games" className="btn-secondary inline-flex items-center gap-2 text-sm">
+                  Review A Game <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-4 pt-2">
-            <Link
-              href={focusLink}
-              className="btn-primary inline-flex items-center gap-2 text-sm"
-            >
-              Start Training <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/settings"
-              className="btn-ghost text-sm"
-            >
-              Choose Different
-            </Link>
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <ActionMetric label="Solved today" value={`+${puzzlesToday}`} icon={<CheckCircle2 className="h-4 w-4 text-accent-emerald" />} />
+              <ActionMetric label="Training load" value={`${totalMinutes || 20}m`} icon={<Dumbbell className="h-4 w-4 text-accent-purple" />} />
+              <ActionMetric label="Priority" value={focusArea} icon={<Crosshair className="h-4 w-4 text-accent-rose" />} />
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section className="card">
+          <SectionHeader title="Week Readiness" href="/progress" />
+          <div className="mt-4 grid grid-cols-7 gap-2">
+            {dayNames.map((d, i) => {
+              const isPast = i < todayDayIndex;
+              const isToday = i === todayDayIndex;
+              const dayTasks = (data?.tasks ?? []).filter((t) => t.day === i);
+              const completed = dayTasks.filter((t) => t.completed).length > 0;
+              const statusClass = completed
+                ? "border-accent-emerald/35 bg-accent-emerald/10 text-accent-emerald"
+                : isToday
+                  ? "border-accent-gold/50 bg-accent-gold/10 text-accent-gold"
+                  : isPast
+                    ? "border-white/[0.08] bg-white/[0.03] text-text-muted"
+                    : "border-white/[0.08] bg-white/[0.02] text-text-secondary";
+              return (
+                <div key={d} className={`flex h-20 flex-col justify-between rounded-md border p-2 ${statusClass}`}>
+                  <span className="text-[10px] font-semibold">{d}</span>
+                  <span className="h-1.5 rounded-full bg-current opacity-60" />
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs text-text-muted">
+            {tasks.filter((t) => t.completed).reduce((s, t) => s + t.duration, 0)} min logged from the current plan.
+          </p>
+        </section>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          WEEK AT A GLANCE — 7-day pill row
-         ═══════════════════════════════════════════════════════════ */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text-primary">Your Week</h3>
-          <Link href="/progress" className="text-xs text-text-muted hover:text-accent-gold transition-colors">
-            View calendar
-          </Link>
-        </div>
-        <div className="flex items-center gap-2">
-          {dayNames.map((d, i) => {
-            const isPast = i < todayDayIndex;
-            const isToday = i === todayDayIndex;
-            const dayTasks = (data?.tasks ?? []).filter((t) => t.day === i);
-            const completed = dayTasks.filter((t) => t.completed).length > 0;
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <section className="card">
+          <SectionHeader title="Today's Training Queue" href="/tactics" />
+          <div className="mt-4 space-y-3">
+            {incompleteTasks.length > 0 ? incompleteTasks.slice(0, 4).map((task, i) => (
+              <TrainingTask key={task.id} task={task} index={i} />
+            )) : (
+              <EmptyState text="All done for today." />
+            )}
+          </div>
+        </section>
 
-            let pillStyle = "bg-white/[0.04] text-text-muted";
-            if (isPast && completed) pillStyle = "bg-accent-gold/20 text-accent-gold";
-            else if (isPast && !completed) pillStyle = "bg-white/[0.04] text-text-muted";
-            if (isToday) pillStyle = "ring-1 ring-accent-gold/40 text-text-primary bg-white/[0.06]";
+        <section className="card">
+          <SectionHeader title="Skill Map" href="/progress" />
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase text-text-muted">Reliable strengths</p>
+              {strongSkills.length > 0 ? (
+                <div className="space-y-3">
+                  {strongSkills.map((skill) => <SkillMeter key={skill.key} label={skill.label} value={skill.value} tone="emerald" />)}
+                </div>
+              ) : <EmptyState text="Complete more sessions to map strengths." />}
+            </div>
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase text-text-muted">Rating leaks</p>
+              {(weaknessReport?.priorities ?? []).length > 0 ? (
+                <div className="space-y-3">
+                  {(weaknessReport?.priorities ?? []).slice(0, 3).map((p, i) => (
+                    <Link key={i} href={p.trainNowLink} className="group flex items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-accent-gold/25 hover:bg-white/[0.045]">
+                      <SeverityDot severity={p.severity} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-text-primary">{categoryLabel(p.category)}</p>
+                        <p className="truncate text-xs text-text-muted">{p.description}</p>
+                      </div>
+                      <ArrowUpRight className="h-4 w-4 text-text-muted group-hover:text-accent-gold" />
+                    </Link>
+                  ))}
+                </div>
+              ) : weakSkills.length > 0 ? (
+                <div className="space-y-3">
+                  {weakSkills.map((skill) => <SkillMeter key={skill.key} label={skill.label} value={skill.value} tone="rose" />)}
+                </div>
+              ) : <EmptyState text="No major leaks detected yet." />}
+            </div>
+          </div>
+        </section>
+      </div>
 
-            return (
-              <div key={d} className="flex flex-col items-center gap-1.5 flex-1">
-                <span className="text-[10px] text-text-muted font-medium">{d}</span>
-                <div
-                  className={`w-full h-2.5 rounded-full transition-all ${pillStyle}`}
-                />
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+        <section className="card">
+          <SectionHeader title="Recent Mistake Pattern" href="/progress" />
+          <div className="mt-4 space-y-3">
+            {topMistakes.length > 0 ? topMistakes.map(([cat, count]) => (
+              <div key={cat} className="flex items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.025] p-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-accent-rose/10 font-mono text-sm font-semibold text-accent-rose">{count}</span>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">{mistakeCategoryLabel(cat)}</p>
+                  <p className="text-xs text-text-muted">Review this before your next rated session.</p>
+                </div>
               </div>
-            );
-          })}
-        </div>
-        <p className="text-xs text-text-muted mt-3">
-          {tasks.filter((t) => t.completed).reduce((s, t) => s + t.duration, 0)} min this week
-        </p>
-      </div>
+            )) : <EmptyState text="No mistakes recorded yet." />}
+          </div>
+        </section>
 
-      {/* ═══════════════════════════════════════════════════════════
-          YOUR LEARNING PATH
-         ═══════════════════════════════════════════════════════════ */}
-      <div className="card">
-        <h3 className="text-[10px] font-medium text-text-muted uppercase tracking-[0.18em] mb-4">YOUR LEARNING PATH</h3>
-        <div className="flex items-center gap-0">
-          {[
-            { label: "Foundations", stage: 1 },
-            { label: "Pattern Recognition", stage: 2 },
-            { label: "Opening Principles", stage: 3 },
-            { label: "Endgame Technique", stage: 4 },
-            { label: "Complete Player", stage: 5 },
-          ].map((s, i) => {
-            const currentStage = rating < 800 ? 1 : rating < 1200 ? 2 : rating < 1500 ? 3 : rating < 1800 ? 4 : 5;
-            const isActive = s.stage === currentStage;
-            const isCompleted = s.stage < currentStage;
-            const remaining = Math.max(0, s.stage * 50 - (puzzlesToday + (streak * 5)));
-            return (
-              <div key={s.stage} className="flex items-center flex-1 group">
-                <div className="flex flex-col items-center relative">
-                  <div
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      isCompleted ? "bg-accent-gold" : isActive ? "bg-accent-gold ring-4 ring-accent-gold/20" : "bg-white/10"
-                    }`}
-                    title={isCompleted ? "Completed" : `Complete ${remaining} more exercises to reach this stage.`}
-                  />
-                  <span className={`text-[10px] mt-2 text-center leading-tight ${isActive ? "text-accent-gold font-medium" : "text-text-muted"}`}>
-                    {s.label}
-                  </span>
-                </div>
-                {i < 4 && <div className={`flex-1 h-px mx-1 ${isCompleted ? "bg-accent-gold" : "bg-white/10"}`} />}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════
-          2-COLUMN SUMMARY GRID — always visible, compact
-         ═══════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        {/* Growth Areas */}
-        <SummaryCard
-          icon={<ArrowUpRight className="w-4 h-4 text-accent-emerald" />}
-          title="Biggest Growth Areas"
-          link="/progress"
-        >
-          {strongSkills.length > 0 ? (
-            <div className="space-y-3">
-              {strongSkills.map((skill) => (
-                <div key={skill.key}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-text-secondary">{skill.label}</span>
-                    <span className="font-mono text-xs text-text-muted">{Math.round(skill.value)}</span>
-                  </div>
-                  <div className="h-1.5 bg-white/[0.06] rounded-full mt-1.5 overflow-hidden">
-                    <div
-                      className="h-full bg-accent-emerald/70 rounded-full transition-all duration-500"
-                      style={{ width: `${skill.value}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-text-muted">Complete more training to track growth.</p>
-          )}
-        </SummaryCard>
-
-        {/* Focus Areas */}
-        <SummaryCard
-          icon={<Crosshair className="w-4 h-4 text-accent-rose" />}
-          title="Areas to Focus On"
-          link="/progress"
-        >
-          {(weaknessReport?.priorities ?? []).length > 0 ? (
-            <div className="space-y-3">
-              {(weaknessReport?.priorities ?? []).slice(0, 2).map((p, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <SeverityDot severity={p.severity} />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm text-text-primary font-medium capitalize">{categoryLabel(p.category)}</span>
-                    <p className="text-xs text-text-muted mt-0.5 truncate">{p.description}</p>
-                  </div>
-                  <Link href={p.trainNowLink} className="text-xs text-accent-gold hover:text-accent-gold-light font-medium shrink-0">
-                    Train
-                  </Link>
-                </div>
-              ))}
-            </div>
-          ) : weakSkills.length > 0 ? (
-            <div className="space-y-3">
-              {weakSkills.map((skill) => (
-                <div key={skill.key} className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">{skill.label}</span>
-                  <Link href={categoryLink(skill.key)} className="text-xs text-accent-gold font-medium">
-                    Train
-                  </Link>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-text-muted">Looking good so far.</p>
-          )}
-        </SummaryCard>
-
-        {/* Mistake Patterns */}
-        <SummaryCard
-          icon={<AlertTriangle className="w-4 h-4 text-accent-gold" />}
-          title="Recent Mistakes"
-          link="/progress"
-        >
-          {topMistakes.length > 0 ? (
-            <div className="space-y-2.5">
-              {topMistakes.map(([cat, count]) => (
-                <div key={cat} className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-md bg-accent-rose/10 flex items-center justify-center text-xs font-mono font-semibold text-accent-rose">
-                    {count}
-                  </span>
-                  <span className="text-sm text-text-secondary">{mistakeCategoryLabel(cat)}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-text-muted">No mistakes recorded yet.</p>
-          )}
-        </SummaryCard>
-
-        {/* Today's Training Plan */}
-        <SummaryCard
-          icon={<BookOpen className="w-4 h-4 text-accent-teal" />}
-          title="Today's Training"
-          link="/tactics"
-        >
-          {incompleteTasks.length > 0 ? (
-            <div className="space-y-2.5">
-              {incompleteTasks.slice(0, 3).map((task, i) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-3 p-2.5 rounded-lg"
-                  style={{
-                    borderLeft: `3px solid ${taskAccentColor(task.category)}`,
-                    background: "rgba(255,255,255,0.02)",
-                  }}
-                >
-                  <span className="text-xs font-mono text-text-muted w-4">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary font-medium truncate">{task.title}</p>
-                    <p className="text-xs text-text-muted">{task.duration} min</p>
-                  </div>
-                  <Link href={categoryLink(task.category)} className="text-xs text-accent-gold font-medium shrink-0">
-                    Start
-                  </Link>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-text-muted">All done for today.</p>
-          )}
-        </SummaryCard>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════
-          QUICK START GRID
-         ═══════════════════════════════════════════════════════════ */}
-      <div>
-        <h3 className="text-sm font-semibold text-text-primary mb-3">Quick Start</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <QuickStartCard href="/tactics" icon={<Zap className="w-5 h-5" />} label="Solve Puzzles" sub={`${dueReviews} due`} desc="Find the winning move. The most efficient way to improve." />
-          <QuickStartCard href="/games" icon={<BookOpen className="w-5 h-5" />} label="Review Game" sub="Upload PGN" desc="Upload a game and discover the moments that decided it." />
-          <QuickStartCard href="/endgames" icon={<Target className="w-5 h-5" />} label="Endgame Lab" sub="Rook endings" desc="Master the art of converting advantages with few pieces left." />
-          <QuickStartCard href="/openings" icon={<BookOpen className="w-5 h-5" />} label="Opening Playbook" sub="Study lines" desc="Learn the first moves and the strategic plans behind them." />
-          <QuickStartCard href="/calculation" icon={<Crosshair className="w-5 h-5" />} label="Think Ahead" sub="Deep training" desc="Train your mind to think several moves ahead before acting." />
-          <QuickStartCard href="/progress" icon={<TrendingUp className="w-5 h-5" />} label="My Development" sub="View progress" desc="Track your improvement across every area of the game." />
-        </div>
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-text-primary">Launch Pad</h3>
+            <Link href="/training-paths" className="text-xs font-medium text-text-muted transition hover:text-accent-gold">All paths</Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <QuickStartCard href="/tactics" icon={<Zap className="w-5 h-5" />} label="Solve Puzzles" sub={`${dueReviews} due`} desc="Tactical pattern work." />
+            <QuickStartCard href="/games" icon={<BookOpen className="w-5 h-5" />} label="Review Game" sub="Upload PGN" desc="Find deciding moments." />
+            <QuickStartCard href="/endgames" icon={<Target className="w-5 h-5" />} label="Endgame Lab" sub="Technique" desc="Convert and defend." />
+            <QuickStartCard href="/openings" icon={<BookOpen className="w-5 h-5" />} label="Openings" sub="Playbook" desc="Plans and structures." />
+            <QuickStartCard href="/calculation" icon={<Crosshair className="w-5 h-5" />} label="Calculation" sub="Deep work" desc="Candidate move discipline." />
+            <QuickStartCard href="/progress" icon={<LineChart className="w-5 h-5" />} label="Development" sub="Progress" desc="Inspect the trend." />
+          </div>
+        </section>
       </div>
     </div>
   );
 }
 
 /* ── Sub-components ──────────────────────────────────────── */
+
+function HeaderMetric({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-md border border-white/[0.07] bg-white/[0.035] px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase text-text-muted">{label}</span>
+        {icon}
+      </div>
+      <p className="mt-1 truncate font-mono text-lg font-semibold text-text-primary">{value}</p>
+    </div>
+  );
+}
+
+function ActionMetric({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-md border border-white/[0.08] bg-bg-primary/45 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-medium text-text-muted">{label}</span>
+        {icon}
+      </div>
+      <p className="mt-3 truncate text-lg font-semibold text-text-primary">{value}</p>
+    </div>
+  );
+}
+
+function Badge({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.045] px-2.5 py-1 text-xs font-medium text-text-secondary">
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+function SectionHeader({ title, href }: { title: string; href: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+      <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-text-muted transition hover:text-accent-gold">
+        View
+        <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border border-dashed border-white/[0.08] bg-white/[0.02] p-4 text-sm text-text-muted">
+      {text}
+    </div>
+  );
+}
+
+function SkillMeter({ label, value, tone }: { label: string; value: number; tone: "emerald" | "rose" }) {
+  const bar = tone === "emerald" ? "bg-accent-emerald" : "bg-accent-rose";
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between text-sm">
+        <span className="text-text-secondary">{label}</span>
+        <span className="font-mono text-xs text-text-muted">{Math.round(value)}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+        <div className={`h-full rounded-full ${bar} transition-all duration-500`} style={{ width: `${Math.max(4, Math.min(100, value))}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function TrainingTask({ task, index }: { task: DashboardTask; index: number }) {
+  return (
+    <Link
+      href={categoryLink(task.category)}
+      className="group grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-accent-gold/25 hover:bg-white/[0.045]"
+      style={{ borderLeftColor: taskAccentColor(task.category), borderLeftWidth: 3 }}
+    >
+      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/[0.05] font-mono text-xs text-text-muted">
+        {index + 1}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-text-primary">{task.title}</p>
+        <p className="truncate text-xs text-text-muted">{categoryLabel(task.category)} / {task.duration} min</p>
+      </div>
+      <ArrowRight className="h-4 w-4 text-text-muted transition group-hover:text-accent-gold" />
+    </Link>
+  );
+}
 
 function StatStripItem({
   href,
