@@ -1,0 +1,732 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ──────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── User & Profile ────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // RBAC & account status
+  role           String    @default("user") // super_admin, admin, coach, premium, user, banned
+  status         String    @default("active") // active, inactive, suspended, banned, pending_verification
+  suspendedAt    DateTime?
+  suspendedUntil DateTime?
+  suspendReason  String?
+  bannedAt       DateTime?
+  banReason      String?
+  lastLoginAt    DateTime?
+  lastLoginIp    String?
+
+  accounts      Account[]
+  sessions      Session[]
+  profile       UserProfile?
+  games         Game[]
+  puzzleAttempts PuzzleAttempt[]
+  spacedItems   SpacedRepetitionItem[]
+  trainingPlans TrainingPlan[]
+  coachReports  CoachReport[]
+  progressSnapshots ProgressSnapshot[]
+  openingRepertoire OpeningRepertoire[]
+  calculationAttempts CalculationAttempt[]
+  endgameAttempts EndgameAttempt[]
+  weeklyReviews WeeklyReview[]
+  botGames      BotGame[]
+  auditLogs     AuditLog[] @relation("AuditTarget")
+  loginHistory  LoginHistory[]
+  passwordResets       PasswordResetToken[]
+  customModeAttempts   CustomModeAttempt[]
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ratings
+  ratingBlitz     Int?
+  ratingRapid     Int?
+  ratingClassical Int?
+  ratingFide      Int?
+  ratingUscf      Int?
+  ratingPuzzle    Int      @default(1000)
+  // Glicko-2 puzzle rating fields
+  ratingPuzzleRD         Float    @default(200)   // Rating Deviation
+  ratingPuzzleVolatility Float    @default(0.06)  // Volatility σ
+
+  // Goals & preferences
+  goal            String   @default("improve") // beat_friends, reach_1200, reach_1800, reach_2200, nm, fm, im, gm
+  hoursPerWeek    Int      @default(5)
+  improvementTrack String  @default("serious") // casual, serious, elite
+  age             Int?
+  tournamentExperience String? // none, beginner, club, regional, national, international
+
+  // Skill self-assessment (1-10)
+  skillOpening    Int      @default(5)
+  skillMiddlegame Int      @default(5)
+  skillTactics    Int      @default(5)
+  skillStrategy   Int      @default(5)
+  skillEndgame    Int      @default(5)
+  skillCalculation Int     @default(5)
+  skillTimeManagement Int  @default(5)
+
+  // Computed weakness profile
+  primaryWeakness   String?
+  secondaryWeakness String?
+  strengthArea      String?
+
+  // Onboarding
+  onboardingComplete Boolean @default(false)
+
+  // Preferences
+  preferredOpeningsWhite String[] @default([])
+  preferredOpeningsBlack String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Games & Analysis ──────────────────────────────────
+
+model Game {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Game metadata
+  pgn           String   @db.Text
+  white         String
+  black         String
+  result        String   // 1-0, 0-1, 1/2-1/2
+  date          DateTime?
+  event         String?
+  timeControl   String?  // classical, rapid, blitz, bullet
+  eco           String?  // ECO code
+  opening       String?
+
+  // Analysis state
+  selfReviewComplete Boolean @default(false)
+  engineReviewComplete Boolean @default(false)
+  averageCentipawnLoss Float?
+  accuracy      Float?
+
+  // Source
+  source        String?  // manual, lichess, chesscom
+
+  annotations   GameAnnotation[]
+  mistakes      GameMistake[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GameAnnotation {
+  id       String @id @default(cuid())
+  gameId   String
+  game     Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  moveNumber   Int
+  isWhiteMove  Boolean
+  fen          String
+  userComment  String?  @db.Text  // User's self-analysis
+  engineEval   Float?             // Engine evaluation in pawns
+  bestMove     String?            // Engine best move in UCI
+  playedMove   String?            // Move actually played
+  classification String?          // brilliant, great, good, inaccuracy, mistake, blunder
+  isCriticalMoment Boolean @default(false)
+  userEmotion  String?           // confident, uncertain, panicked, time_pressure, bored
+  clockTime    Int?              // seconds remaining
+
+  createdAt DateTime @default(now())
+}
+
+model GameMistake {
+  id       String @id @default(cuid())
+  gameId   String
+  game     Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  moveNumber    Int
+  fen           String
+  playedMove    String
+  bestMove      String
+  evalDrop      Float        // How much evaluation changed
+  category      String       // tactical_blindness, calculation_failure, opening_ignorance,
+                             // positional_misunderstanding, endgame_failure, time_management,
+                             // psychological_tilt, conversion_failure, defensive_failure
+  subcategory   String?      // Specific motif or theme
+  explanation   String?  @db.Text  // Human-readable explanation
+  phase         String       // opening, middlegame, endgame
+
+  // Links to training
+  generatedTaskId String?
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Tactics & Puzzles ─────────────────────────────────
+
+model Puzzle {
+  id          String   @id @default(cuid())
+  fen         String
+  moves       String   // Solution moves in UCI, space-separated
+  rating      Int
+  ratingRD    Float    @default(150)  // Glicko-2 RD for this puzzle
+  themes      String[] // fork, pin, skewer, etc.
+  phase       String   // opening, middlegame, endgame
+  explanation String?  @db.Text
+  wrongMoveExplanations Json? // { "e4": "This fails because...", "d5": "..." }
+
+  attempts    PuzzleAttempt[]
+
+  createdAt DateTime @default(now())
+}
+
+model PuzzleAttempt {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzleId String
+  puzzle   Puzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  solved    Boolean
+  timeSpent Int      // seconds
+  attempts  Int      @default(1) // number of tries
+  mode      String   // standard, woodpecker, survival, calculation
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Calculation Training ──────────────────────────────
+
+model CalculationExercise {
+  id          String   @id @default(cuid())
+  fen         String
+  type        String   // forcing, non_forcing, mixed
+  difficulty  Int      // 1-10
+  bestMoves   Json     // Array of candidate moves with evaluations
+  mainLine    String   @db.Text // Best variation
+  theme       String?  // attack, defense, endgame_conversion, etc.
+  explanation String?  @db.Text
+
+  attempts    CalculationAttempt[]
+
+  createdAt DateTime @default(now())
+}
+
+model CalculationAttempt {
+  id         String @id @default(cuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   CalculationExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  candidateMoves    String[] // Moves the user identified
+  userVariation     String?  @db.Text // User's calculated line
+  depthReached      Int      // How many moves deep
+  candidateQuality  Float    // 0-100 score
+  accuracyScore     Float    // 0-100 score
+  timeSpent         Int      // seconds
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Endgame Training ──────────────────────────────────
+
+model EndgameModule {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   // king_pawn, rook, minor_piece, queen, complex
+  subcategory String?  // opposition, lucena, philidor, etc.
+  difficulty  Int      // 1-10
+  description String?  @db.Text
+  order       Int
+
+  positions   EndgamePosition[]
+
+  createdAt DateTime @default(now())
+}
+
+model EndgamePosition {
+  id         String @id @default(cuid())
+  moduleId   String
+  module     EndgameModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  fen         String
+  objective   String   // win, draw, technique
+  solution    String?  @db.Text // Key moves/ideas
+  explanation String?  @db.Text
+  order       Int
+
+  attempts    EndgameAttempt[]
+
+  createdAt DateTime @default(now())
+}
+
+model EndgameAttempt {
+  id         String @id @default(cuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positionId String
+  position   EndgamePosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  solved     Boolean
+  moves      String?  @db.Text // Moves played
+  timeSpent  Int
+  accuracy   Float?
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Opening Repertoire ────────────────────────────────
+
+model Opening {
+  id            String   @id @default(cuid())
+  name          String
+  eco           String?
+  color         String   // white, black
+  parentId      String?
+
+  // Teaching content
+  strategicGoals    String?  @db.Text
+  pawnStructures    String?  @db.Text
+  tacticalMotifs    String?  @db.Text
+  commonMistakes    String?  @db.Text
+  keyPlans          String?  @db.Text
+  modelGameIds      String[]
+
+  lines         OpeningLine[]
+  repertoires   OpeningRepertoire[]
+
+  createdAt DateTime @default(now())
+}
+
+model OpeningLine {
+  id        String @id @default(cuid())
+  openingId String
+  opening   Opening @relation(fields: [openingId], references: [id], onDelete: Cascade)
+
+  name       String
+  moves      String   // PGN moves
+  fen        String   // Final position FEN
+  isCritical Boolean  @default(false) // Must-know line
+  isSideline Boolean  @default(false)
+  annotation String?  @db.Text
+
+  createdAt DateTime @default(now())
+}
+
+model OpeningRepertoire {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openingId String
+  opening   Opening @relation(fields: [openingId], references: [id], onDelete: Cascade)
+
+  color     String   // white, black
+  confidence Float   @default(0.5) // 0-1
+  lastStudied DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, openingId])
+}
+
+// ─── Spaced Repetition ─────────────────────────────────
+
+model SpacedRepetitionItem {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // What this item is
+  itemType    String   // puzzle, opening_line, endgame_position, calculation
+  itemId      String   // ID of the related item
+
+  // SM-2 algorithm fields
+  easeFactor  Float    @default(2.5)
+  interval    Int      @default(1) // days
+  repetitions Int      @default(0)
+  nextReview  DateTime @default(now())
+  lastReview  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, itemType, itemId])
+}
+
+// ─── Training Plans ────────────────────────────────────
+
+model TrainingPlan {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  weekOf   DateTime
+  tasks    TrainingTask[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrainingTask {
+  id       String @id @default(cuid())
+  planId   String
+  plan     TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  day         Int      // 0-6 (Monday-Sunday)
+  category    String   // tactics, calculation, endgame, opening, middlegame, game_review, model_games
+  title       String
+  description String?  @db.Text
+  duration    Int      // minutes
+  completed   Boolean  @default(false)
+  order       Int
+
+  // Specific content references
+  targetType  String?  // puzzle_set, endgame_module, opening_line, etc.
+  targetId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Coach & Progress ──────────────────────────────────
+
+model CoachReport {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String   // post_game, weekly, monthly, plateau
+  title       String
+  content     String   @db.Text // Rich analysis text
+  insights    Json?    // Structured insights
+  period      String?  // "2024-W12", "2024-03", etc.
+
+  createdAt DateTime @default(now())
+}
+
+model ProgressSnapshot {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date              DateTime @default(now())
+  ratingBlitz       Int?
+  ratingRapid       Int?
+  ratingClassical   Int?
+  ratingPuzzle      Int?
+
+  // Skill metrics (0-100)
+  tacticalAccuracy  Float?
+  calculationDepth  Float?
+  endgameAccuracy   Float?
+  openingRetention  Float?
+  conversionRate    Float?
+  defensiveSaveRate Float?
+  avgCentipawnLoss  Float?
+  timeTroubleFreq   Float?
+  blunderRate       Float?
+
+  // Motif tracking
+  motifScores       Json?  // { "fork": 85, "pin": 72, ... }
+
+  // Training consistency
+  trainingMinutes   Int?
+  tasksCompleted    Int?
+  streakDays        Int?
+
+  createdAt DateTime @default(now())
+}
+
+model WeeklyReview {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  weekOf          DateTime
+  gamesPlayed     Int      @default(0)
+  gamesReviewed   Int      @default(0)
+  puzzlesSolved   Int      @default(0)
+  trainingMinutes Int      @default(0)
+  tasksCompleted  Int      @default(0)
+  totalTasks      Int      @default(0)
+  keyInsight      String?  @db.Text
+  biggestWeakness String?
+  improvement     String?
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Model Games ───────────────────────────────────────
+
+model ModelGame {
+  id          String   @id @default(cuid())
+  pgn         String   @db.Text
+  white       String
+  black       String
+  result      String
+  year        Int?
+  event       String?
+  eco         String?
+  opening     String?
+  themes      String[] // attack, defense, endgame, positional, tactical
+  annotations String?  @db.Text // Instructive commentary
+  difficulty  Int      @default(5) // 1-10
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Bot Games & Coach Review ──────────────────────────
+
+model BotGame {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pgn             String   @db.Text
+  white           String
+  black           String
+  result          String   // 1-0, 0-1, 1/2-1/2, *
+  userColor       String   // white, black
+  botStrength     String   // beginner, casual, club, advanced, expert, master
+  timeControl     String   // untimed, 10+0, 15+10, 30+0, custom
+  trainingFocus   String?  // tactics, opening_discipline, endgame_technique, calculation, positional_play, general
+
+  opening         String?
+  eco             String?
+  totalMoves      Int      @default(0)
+
+  // Analysis state
+  analysisComplete Boolean @default(false)
+  accuracy         Float?
+  avgCentipawnLoss Float?
+
+  // Summary
+  summaryVerdict   String?  @db.Text
+  summaryStrengths String?  @db.Text
+  summaryWeaknesses String? @db.Text
+  summaryLesson    String?  @db.Text
+
+  moves           BotGameMove[]
+  criticalMoments BotGameCriticalMoment[]
+  derivedTasks    DerivedTrainingTask[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BotGameMove {
+  id         String @id @default(cuid())
+  botGameId  String
+  botGame    BotGame @relation(fields: [botGameId], references: [id], onDelete: Cascade)
+
+  moveNumber    Int
+  isWhiteMove   Boolean
+  san           String      // e.g. "Nf3"
+  uci           String?     // e.g. "g1f3"
+  fen           String      // Position after the move
+
+  // Engine evaluation
+  evalBefore    Float?      // Eval before this move (in pawns, + = white advantage)
+  evalAfter     Float?      // Eval after this move
+  bestMoveSan   String?     // Engine's best move in SAN
+  bestMoveUci   String?     // Engine's best move in UCI
+  bestLineUci   String?     // Full best line in UCI
+  evalDrop      Float?      // How much eval changed (positive = got worse for mover)
+
+  // Classification
+  classification String?    // brilliant, great, good, interesting, inaccuracy, mistake, blunder
+
+  // Coach commentary (3 layers)
+  verdictLabel     String?  // Layer 1: Simple verdict text
+  humanExplanation String?  @db.Text // Layer 2: What the move tried to do, position context
+  thinkingProcess  String?  @db.Text // Layer 3: What candidates to consider, what stronger player sees
+
+  // Position features
+  phase         String?     // opening, middlegame, endgame
+  isPlayerMove  Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([botGameId, moveNumber])
+}
+
+model BotGameCriticalMoment {
+  id         String @id @default(cuid())
+  botGameId  String
+  botGame    BotGame @relation(fields: [botGameId], references: [id], onDelete: Cascade)
+
+  moveNumber   Int
+  type         String   // first_mistake, biggest_blunder, missed_tactic, missed_win,
+                        // opening_departure, turning_point, best_move, defensive_resource,
+                        // poor_conversion, time_trouble
+  title        String
+  description  String   @db.Text
+  severity     Int      @default(5) // 1-10
+
+  createdAt DateTime @default(now())
+}
+
+model DerivedTrainingTask {
+  id         String @id @default(cuid())
+  botGameId  String
+  botGame    BotGame @relation(fields: [botGameId], references: [id], onDelete: Cascade)
+
+  moveNumber    Int
+  category      String   // tactics, opening, endgame, calculation, middlegame_strategy
+  title         String
+  description   String   @db.Text
+  targetType    String?  // puzzle_set, endgame_module, opening_line, calculation_exercise
+  targetId      String?
+  completed     Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Admin: Audit Logging ─────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  targetType  String
+  targetId    String?
+  targetUser  User?    @relation("AuditTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  actorId     String
+  actorEmail  String
+  oldValue    String?  @db.Text
+  newValue    String?  @db.Text
+  reason      String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([targetId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model LoginHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip            String?
+  userAgent     String?
+  success       Boolean
+  failureReason String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ─── Password Reset Tokens ────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── Custom Mode Exercises ────────────────────────────
+
+model CustomModeExercise {
+  id          String   @id @default(cuid())
+  mode        String   // "plan" | "opponent_plan" | "trade"
+  fen         String
+  sideToMove  String   // "white" | "black"
+  goal        String   // Short textual prompt shown to user
+  ratingMin   Int      @default(1000)
+  ratingMax   Int      @default(2500)
+  difficulty  Int      @default(3) // 1-5
+
+  // Pre-annotated answers (JSON)
+  goodPlans   String   @db.Text // JSON: array of { moves: string[], summary: string, eval: number }
+  wrongPlans  String?  @db.Text // JSON: array of { moves: string[], reason: string }
+  explanation String   @db.Text // Full coaching explanation revealed after attempt
+
+  // For trade mode
+  tradeAnswer String?  // "trade" | "avoid" | "trade_after_improving"
+  tradeThemes String?  // comma-separated: "isolated_pawn,opposite_castling,minor_piece"
+
+  attempts    CustomModeAttempt[]
+  createdAt   DateTime @default(now())
+
+  @@index([mode])
+  @@index([mode, ratingMin, ratingMax])
+}
+
+model CustomModeAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    CustomModeExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  mode        String
+  userMoves   String?  @db.Text // JSON: user's move sequence
+  userAnswer  String?  // For trade mode: "trade" | "avoid" | "trade_after_improving"
+  userText    String?  @db.Text // Optional free-text plan
+  score       Int      // 0-3
+  feedback    String   @db.Text // Generated coaching feedback
+  timeSpentMs Int?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, mode])
+  @@index([userId, exerciseId])
+}

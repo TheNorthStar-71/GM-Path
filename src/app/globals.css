@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary font-sans antialiased;
+    letter-spacing: 0.01em;
+    line-height: 1.6;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-primary;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/15;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-card p-5 transition-all duration-200;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .card-hover {
+    @apply card cursor-pointer;
+  }
+  .card-hover:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    border-color: rgba(240,180,41,0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary {
+    @apply bg-accent-gold text-bg-primary font-semibold px-6 py-2.5 rounded-lg
+           transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent-gold/50;
+  }
+  .btn-primary:hover {
+    @apply bg-accent-gold-light;
+    transform: scale(1.02);
+  }
+
+  .btn-secondary {
+    @apply bg-bg-tertiary text-text-primary font-medium px-6 py-2.5 rounded-lg
+           transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent-gold/50;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .btn-secondary:hover {
+    border-color: rgba(240,180,41,0.2);
+    transform: scale(1.02);
+  }
+
+  .btn-ghost {
+    @apply text-text-secondary font-medium px-4 py-2 rounded-lg
+           transition-all duration-150;
+  }
+  .btn-ghost:hover {
+    @apply text-text-primary;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .input-field {
+    @apply w-full bg-bg-tertiary rounded-lg px-4 py-2.5
+           text-text-primary placeholder-text-muted
+           focus:outline-none focus:ring-1 focus:ring-accent-gold/30
+           transition-all duration-200;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .input-field:focus {
+    border-color: rgba(240,180,41,0.3);
+  }
+
+  .section-title {
+    @apply font-display text-2xl font-semibold text-text-primary;
+  }
+
+  .label {
+    @apply text-sm font-medium text-text-secondary;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-gold {
+    @apply badge bg-accent-gold/10 text-accent-gold;
+  }
+  .badge-emerald {
+    @apply badge bg-accent-emerald/10 text-accent-emerald;
+  }
+  .badge-rose {
+    @apply badge bg-accent-rose/10 text-accent-rose;
+  }
+  .badge-blue {
+    @apply badge bg-accent-blue/10 text-accent-blue;
+  }
+  .badge-purple {
+    @apply badge bg-accent-purple/10 text-accent-purple;
+  }
+  .badge-cyan {
+    @apply badge bg-accent-teal/10 text-accent-teal;
+  }
+  .badge-teal {
+    @apply badge bg-accent-teal/10 text-accent-teal;
+  }
+
+  .btn-danger {
+    @apply bg-accent-rose/10 text-accent-rose font-semibold px-6 py-2.5 rounded-lg
+           hover:bg-accent-rose/20 transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent-rose/50;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  /* Segmented control — consistent across all pages */
+  .segmented-control {
+    @apply inline-flex rounded-lg p-1;
+    background: rgba(255,255,255,0.04);
+  }
+  .segmented-control button {
+    @apply px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 text-text-secondary;
+  }
+  .segmented-control button:hover {
+    @apply text-text-primary;
+  }
+  .segmented-control button[data-active="true"] {
+    @apply bg-accent-gold/15 text-accent-gold;
+  }
+
+  /* Pill buttons — for filter chips */
+  .pill-button {
+    @apply px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 text-text-secondary;
+    background: rgba(255,255,255,0.04);
+  }
+  .pill-button:hover {
+    @apply text-text-primary;
+    background: rgba(255,255,255,0.08);
+  }
+  .pill-button[data-active="true"] {
+    @apply bg-accent-gold/15 text-accent-gold;
+  }
+
+  /* Pill toggle group — for time range selectors */
+  .pill-toggle {
+    @apply inline-flex rounded-lg p-0.5 gap-0.5;
+    background: rgba(255,255,255,0.04);
+  }
+  .pill-toggle button {
+    @apply px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 text-text-muted;
+  }
+  .pill-toggle button:hover {
+    @apply text-text-secondary;
+  }
+  .pill-toggle button[data-active="true"] {
+    @apply bg-accent-gold/15 text-accent-gold;
+  }
+
+  /* Chessboard styling */
+  .cg-wrap {
+    @apply rounded-lg overflow-hidden;
+  }
+}
+
+.chess-square {
+  @apply flex items-center justify-center select-none transition-colors duration-100;
+}
+.chess-square-light {
+  background-color: #e8dcc8;
+}
+.chess-square-dark {
+  background-color: #a67c52;
+}
+.chess-square-selected {
+  background-color: #f7ec59 !important;
+}
+.chess-square-hint {
+  position: relative;
+}
+.chess-square-hint::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+}
+.chess-piece {
+  @apply text-4xl cursor-pointer select-none;
+  filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
+}
